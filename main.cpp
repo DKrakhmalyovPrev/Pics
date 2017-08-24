@@ -8,7 +8,7 @@
 
 using namespace std;
 
-bool isequal(BMP& Image1, BMP& Image2, int i, int j)
+bool isequal(BMP& Image1, BMP& Image2, int i, int j) // Равны ли биты, стоящие на определённой позиции в двух картинках
 {
 	if ((Image1(i, j)->Red != Image2(i, j)->Red) ||
 		(Image1(i, j)->Blue != Image2(i, j)->Blue) ||
@@ -18,7 +18,7 @@ bool isequal(BMP& Image1, BMP& Image2, int i, int j)
 		return(true);
 }
 
-bool isequalbit(BMP& Image, int i, int j, int r, int g, int b)
+bool isequalbit(BMP& Image, int i, int j, int r, int g, int b) // Равно ли значение опр.бита заданным параметрам
 {
 	if ((Image(i, j)->Red != r) ||
 		(Image(i, j)->Green != g) ||
@@ -29,14 +29,16 @@ bool isequalbit(BMP& Image, int i, int j, int r, int g, int b)
 }
 
 int howmanynear(BMP& Image, int i, int j, int q)
+//Сколько битов, отличных от стандартного значения, принадлежат связной группе.
+//Количество уровней, до которых идёт рекурсия вправо и вверх, варьируется в зависимости от допустимого сдвига и мощности
 {
 
 	int res = 1;
 	if (q > 5)
 		return(res);
-	if (!isequalbit(Image,i + 1, j,0,0,0))
+	if (!isequalbit(Image,i + 1, j,255,255,255))
 		res += howmanynear(Image, i + 1, j,q+1);
-	if (!isequalbit(Image, i , j-1, 0, 0, 0))
+	if (!isequalbit(Image, i , j-1, 255, 255, 255))
 		res += howmanynear(Image, i , j-1,q+1);
 	return(res);
 }
@@ -49,13 +51,16 @@ int main() {
 	BMP ImageRes;
 	int maxdif;
 	cin >> maxdif;
+	// Читаем допустимый размер разницы
 	Image1.ReadFromFile("image4.bmp"); 
 	Image2.ReadFromFile("image5.bmp");
+	// Читаем два файла из памяти
 	if ((Image1.TellWidth() != Image2.TellWidth()) || (Image1.TellHeight() != Image2.TellHeight()))
 	{
 		cout << "Pictures have different sizes ";
 		return 0;
 	}
+	//Если размеры изображений разные -- они сразу признаются разными
 	ImageRes.SetSize(Image1.TellWidth(), Image1.TellHeight());
 	ImageRes.SetBitDepth(8);
 	for (int i = 0; i < Image1.TellWidth();i++)
@@ -66,6 +71,7 @@ int main() {
 			ImageRes(i, j)->Blue = 255;
 			ImageRes(i, j)->Alpha = 1;
 		}
+	//Создаём белую картинку того же размера
 	int co = 0;
 	for (int i = 1; i < Image1.TellWidth();i++)
 		for (int j = 1; j < Image1.TellHeight();j++)
@@ -79,12 +85,14 @@ int main() {
 				ImageRes(i, j)->Alpha = 1;
 			}
 		}
+	// Побитово сравниваем картинки. Разницу между ними наносим на маску в виде чёрных битов
 	cout << co;
 	if (co < 100)
 	{
 		cout << "Pictures seem equal";
 		return 0;
 	}
+	//Делаем допущение, что картинки, отличающиеся незначительно, равны
 	else
 	{
 		int curdif = 0;
@@ -95,6 +103,9 @@ int main() {
 					(isequalbit(ImageRes, i - 1, j, 255, 255, 255)) &&
 					(isequalbit(ImageRes, i, j + 1, 255, 255, 255)))
 					curdif = howmanynear(ImageRes, i, j, 0);
+				//Найдя чёрный бит в маске, слева и снизу от которого белые, предполагаем,
+				//что он может стать основой блоку битов различия.
+				//Если блок битов превышает размер допустимой разницы -- он считается различием
 				if (curdif > maxdif)
 				{
 					for (int q = i - 10; q < i + 10;q++)
@@ -105,11 +116,13 @@ int main() {
 							Image1(q, k)->Blue = 0;
 							Image1(q, k)->Green = 0;
 						}
+					//Наносим опознавательный знак (чёрную полоску) на первое изображение
 				}
 				curdif = 0;
 			}
 		cout << "Pictures seem different";
 		Image1.WriteToFile("image11.bmp");
+		//выводим в консоль итог и сохраняем картинку
 		return(0);
 	}
 }
